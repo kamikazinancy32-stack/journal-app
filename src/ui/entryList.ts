@@ -1,6 +1,5 @@
 import type { JournalEntry } from '../types'
 import { renderEntryCard } from './entryCard'
-import { SPIRAL_SVG } from './motifs'
 
 /**
  * Renders the visible entries.
@@ -11,9 +10,8 @@ export function renderEntryList(container: HTMLElement, entries: readonly Journa
   if (totalCount === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        ${SPIRAL_SVG}
-        <h3 class="empty-state__title">Your journal is waiting</h3>
-        <p class="empty-state__text">Every pattern starts with one line. Write your first entry using the form.</p>
+        <p class="empty-state__title">Nothing written yet.</p>
+        <p class="empty-state__text">Your first entry will appear here. Start with a single sentence about today.</p>
       </div>`
     return
   }

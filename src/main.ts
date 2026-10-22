@@ -10,7 +10,7 @@ import { announce } from './ui/announce'
 import { initThemeToggle } from './ui/theme'
 
 // ── Setup ───────────────────────────────────────────────────────────────
-const ENTRIES_KEY = 'imigongo-journal:entries'
+const ENTRIES_KEY = 'journal:entries'
 
 const store = new JournalStore(new TypedStorage<JournalEntry[]>(ENTRIES_KEY, isArrayOf(isJournalEntry), []))
 const state: ViewState = { editingId: null }
