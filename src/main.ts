@@ -1,4 +1,4 @@
-import './style.css'
+import './styles/main.css'
 import type { CardAction, EntryDraft, JournalEntry, ViewState } from './types'
 import { JournalStore } from './services/journalStore'
 import { TypedStorage } from './utils/storage'
@@ -7,6 +7,7 @@ import { getElement } from './utils/dom'
 import { EntryForm } from './ui/entryForm'
 import { renderEntryList } from './ui/entryList'
 import { announce } from './ui/announce'
+import { initThemeToggle } from './ui/theme'
 
 // ── Setup ───────────────────────────────────────────────────────────────
 const ENTRIES_KEY = 'imigongo-journal:entries'
@@ -88,5 +89,6 @@ listEl.addEventListener('click', (event: MouseEvent): void => {
   if (entry && isCardAction(action)) handleCardAction(action, entry)
 })
 
+initThemeToggle(getElement('#theme-toggle', HTMLButtonElement))
 store.subscribe(render)
 render()

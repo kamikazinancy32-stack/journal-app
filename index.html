@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="A personal journal inspired by Rwandan Imigongo art." />
     <title>Imigongo Journal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400&family=Unbounded:wght@500;700;800&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <a class="skip-link" href="#entry-title">Skip to the journal form</a>
@@ -21,6 +27,12 @@
             <p class="brand__tagline">Write your days in bold lines.</p>
           </div>
         </div>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path class="theme-toggle__light" d="M2 22 12 2l10 20Z" />
+            <path class="theme-toggle__dark" d="M12 2l10 20H12Z" />
+          </svg>
+        </button>
       </div>
       <div class="band band--zigzag" aria-hidden="true"></div>
     </header>
