@@ -154,10 +154,6 @@ To cancel a merge that went wrong before committing, run `git merge --abort`. Th
 
 ## 6. Screenshots
 
-<!-- Add screenshots here -->
+![Journal app on desktop in dark mode, showing the entry form, the search and mood filters, and four entries](docs/screenshots/desktop.png)
 
-- Branch list on GitHub: _screenshot_
-- Commit history (`git log --oneline --graph --all`): _screenshot_
-- An open pull request with the template filled in: _screenshot_
-- A review / approval on a pull request: _screenshot_
-- Merged pull requests list: _screenshot_
+*The Journal app on desktop (dark mode): the entry form, the search and mood filters, and four saved entries.*
