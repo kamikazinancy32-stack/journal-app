@@ -3,6 +3,16 @@ import { isCardAction, loadEntries, loadTheme, saveEntries, saveTheme } from './
 import { EntryForm, announce, applyTheme, getElement, renderEntryList } from './ui.js'
 
 // ── Journal logic ───────────────────────────────────────────────────────
+/**
+ * GENERIC search helper. <T> is "any kind of object in the list", and
+ * `key: keyof T` means the key must be a real property of T, so
+ * findByProperty(journal, 'titel', ...) is a compile error.
+ * Example: findByProperty(journal, 'id', '42') finds the entry with id '42'.
+ */
+export function findByProperty<T>(list: T[], key: keyof T, value: T[keyof T]): T | undefined {
+  return list.find((item: T): boolean => item[key] === value)
+}
+
 /** Creates a unique id for a new entry. */
 function createId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -38,10 +48,6 @@ export class JournalStore {
     return [...this.entries]
   }
 
-  getById(id: string): JournalEntry | undefined {
-    return this.entries.find((entry: JournalEntry): boolean => entry.id === id)
-  }
-
   add(draft: EntryDraft): JournalEntry {
     const entry: JournalEntry = {
       ...this.clean(draft),
@@ -54,7 +60,7 @@ export class JournalStore {
   }
 
   update(id: string, changes: EntryUpdate): JournalEntry | undefined {
-    const existing: JournalEntry | undefined = this.getById(id)
+    const existing: JournalEntry | undefined = findByProperty(this.entries, 'id', id)
     if (!existing) return undefined
 
     // id and timestamp are kept from the original entry.
@@ -160,7 +166,7 @@ listEl.addEventListener('click', (event: MouseEvent): void => {
   const button: HTMLButtonElement | null = event.target.closest<HTMLButtonElement>('button[data-action]')
   const id: string | undefined = button?.closest<HTMLElement>('.entry-card')?.dataset.id
   const action: string | undefined = button?.dataset.action
-  const entry: JournalEntry | undefined = id !== undefined ? store.getById(id) : undefined
+  const entry: JournalEntry | undefined = id !== undefined ? findByProperty(store.getAll(), 'id', id) : undefined
   if (entry && isCardAction(action)) handleCardAction(action, entry)
 })
 
