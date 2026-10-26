@@ -1,4 +1,3 @@
-import './styles/main.css'
 import type { CardAction, EntryDraft, JournalEntry, ViewState } from './types'
 import { JournalStore } from './services/journalStore'
 import { TypedStorage } from './utils/storage'
