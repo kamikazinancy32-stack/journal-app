@@ -13,7 +13,9 @@ export function getElement<T extends Element>(
   type: { new (): T; prototype: T },
   root: ParentNode = document,
 ): T {
-  const element: Element | null = root.querySelector(selector)
+  // querySelector<T> tells TypeScript what we expect; the instanceof check
+  // makes sure it is really there (not null) and really that kind of element.
+  const element: T | null = root.querySelector<T>(selector)
   if (!(element instanceof type)) {
     throw new Error(`Expected ${selector} to exist and be a ${type.name}`)
   }
