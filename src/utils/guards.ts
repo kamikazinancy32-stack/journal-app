@@ -1,5 +1,5 @@
-import type { CardAction, JournalEntry, Theme } from '../types'
-import { isMood } from './moods'
+import type { CardAction, JournalEntry, Theme } from '../types/index.js'
+import { isMood } from './moods.js'
 
 // Type guards turn `unknown` data (from JSON or the DOM) into trusted types.
 

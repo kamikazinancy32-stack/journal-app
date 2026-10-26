@@ -1,5 +1,5 @@
-import type { JournalEntry } from '../types'
-import { renderEntryCard } from './entryCard'
+import type { JournalEntry } from '../types/index.js'
+import { renderEntryCard } from './entryCard.js'
 
 /**
  * Renders the visible entries.

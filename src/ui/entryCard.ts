@@ -1,7 +1,7 @@
-import type { JournalEntry } from '../types'
-import { formatDate } from '../utils/date'
-import { escapeHtml } from '../utils/dom'
-import { getMoodLabel } from '../utils/moods'
+import type { JournalEntry } from '../types/index.js'
+import { formatDate } from '../utils/date.js'
+import { escapeHtml } from '../utils/dom.js'
+import { getMoodLabel } from '../utils/moods.js'
 
 /** Builds the HTML for ONE entry card. Shared by every list on the page. */
 export function renderEntryCard(entry: JournalEntry, index: number): string {

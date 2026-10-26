@@ -1,4 +1,4 @@
-import type { Mood, MoodOption } from '../types'
+import type { Mood, MoodOption } from '../types/index.js'
 
 // `readonly` array: the list of moods can be read but never changed at runtime.
 export const MOOD_OPTIONS: readonly MoodOption[] = [

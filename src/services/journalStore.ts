@@ -1,6 +1,6 @@
-import type { EntryDraft, EntryId, EntryUpdate, JournalEntry } from '../types'
-import type { TypedStorage } from '../utils/storage'
-import { createId } from '../utils/id'
+import type { EntryDraft, EntryId, EntryUpdate, JournalEntry } from '../types/index.js'
+import type { TypedStorage } from '../utils/storage.js'
+import { createId } from '../utils/id.js'
 
 // A listener is any function that wants to hear "the entries changed".
 export type StoreListener = (entries: readonly JournalEntry[]) => void

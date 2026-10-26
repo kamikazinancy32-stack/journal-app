@@ -1,6 +1,6 @@
-import type { Theme } from '../types'
-import { isTheme } from '../utils/guards'
-import { TypedStorage } from '../utils/storage'
+import type { Theme } from '../types/index.js'
+import { isTheme } from '../utils/guards.js'
+import { TypedStorage } from '../utils/storage.js'
 
 const prefersDark: boolean = window.matchMedia('(prefers-color-scheme: dark)').matches
 const themeStorage = new TypedStorage<Theme>('journal:theme', isTheme, prefersDark ? 'dark' : 'light')

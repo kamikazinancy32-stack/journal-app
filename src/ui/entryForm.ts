@@ -1,7 +1,7 @@
-import type { EntryDraft, JournalEntry } from '../types'
-import { getElement } from '../utils/dom'
-import { isISODate, todayISO } from '../utils/date'
-import { MOOD_OPTIONS, isMood } from '../utils/moods'
+import type { EntryDraft, JournalEntry } from '../types/index.js'
+import { getElement } from '../utils/dom.js'
+import { isISODate, todayISO } from '../utils/date.js'
+import { MOOD_OPTIONS, isMood } from '../utils/moods.js'
 
 export type SubmitHandler = (draft: EntryDraft) => void
 

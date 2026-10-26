@@ -1,26 +1,25 @@
 {
   "compilerOptions": {
-    "target": "es2023",
-    "module": "esnext",
-    "lib": ["ES2023", "DOM"],
-    "types": ["vite/client"],
-    "allowArbitraryExtensions": true,
+    /* Output: compile src/*.ts into dist/*.js that the browser loads directly */
+    "target": "es2020",
+    "module": "es2020",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "lib": ["ES2020", "DOM"],
+    "types": [],
     "skipLibCheck": true,
 
     /* Type checking */
     "strict": true,
 
-    /* Bundler mode */
+    /* Module resolution: lets `./storage.js` imports find `storage.ts` */
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
-    "noEmit": true,
 
     /* Linting */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true
   },
