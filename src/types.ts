@@ -64,7 +64,14 @@ export interface MoodOption {
   label: string
 }
 
+// `interface`: the filter controls. `Mood | 'all'` is a union: one mood, or every mood.
+export interface EntryFilter {
+  mood: Mood | 'all'
+  search: string
+}
+
 // `interface`: what the screen is currently showing.
 export interface ViewState {
   editingId: string | null // null means "creating a new entry"
+  filter: EntryFilter
 }

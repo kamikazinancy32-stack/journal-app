@@ -1,4 +1,4 @@
-import type { CardAction, EntryDraft, Journal, JournalEntry, Result, Theme, ValidationError, ViewState } from './types.js'
+import type { CardAction, EntryDraft, EntryFilter, Journal, JournalEntry, Result, Theme, ValidationError, ViewState } from './types.js'
 import { isCardAction, isMood, loadEntries, loadTheme, saveEntries, saveTheme } from './storage.js'
 import { EntryForm, announce, applyTheme, getElement, renderEntryList } from './ui.js'
 
@@ -31,6 +31,20 @@ export function validateEntry(input: Partial<JournalEntry>): Result<EntryDraft> 
   // After this line TypeScript knows `mood` is a Mood (the type guard narrowed it).
   if (errors.length > 0 || !isMood(mood)) return { ok: false, errors }
   return { ok: true, value: { title, content, mood } }
+}
+
+/**
+ * Keeps the entries that match the chosen mood AND contain the search text
+ * in their title or content (not case-sensitive). Returns a new Journal.
+ */
+export function filterEntries(journal: Journal, filter: EntryFilter): Journal {
+  const search: string = filter.search.trim().toLowerCase()
+  return journal.filter((entry: JournalEntry): boolean => {
+    const moodMatches: boolean = filter.mood === 'all' || entry.mood === filter.mood
+    const textMatches: boolean =
+      search === '' || entry.title.toLowerCase().includes(search) || entry.content.toLowerCase().includes(search)
+    return moodMatches && textMatches
+  })
 }
 
 // A listener is any function that wants to hear "the entries changed".
@@ -111,7 +125,7 @@ export class JournalStore {
 
 // ── Setup ───────────────────────────────────────────────────────────────
 const store = new JournalStore()
-const state: ViewState = { editingId: null }
+const state: ViewState = { editingId: null, filter: { mood: 'all', search: '' } }
 
 const listEl: HTMLElement = getElement('#entry-list', HTMLElement)
 const countEl: HTMLElement = getElement('#entry-count', HTMLElement)
@@ -119,9 +133,11 @@ const themeButton: HTMLButtonElement = getElement('#theme-toggle', HTMLButtonEle
 const form = new EntryForm(getElement('#entry-form', HTMLFormElement), getElement('#form-heading', HTMLElement))
 
 // ── Rendering ───────────────────────────────────────────────────────────
-/** Newest first. */
+/** The entries that match the filters, newest first. */
 function getVisibleEntries(): Journal {
-  return store.getAll().sort((a: JournalEntry, b: JournalEntry): number => b.timestamp - a.timestamp)
+  return filterEntries(store.getAll(), state.filter).sort(
+    (a: JournalEntry, b: JournalEntry): number => b.timestamp - a.timestamp,
+  )
 }
 
 function render(): void {
