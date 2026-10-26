@@ -12,9 +12,16 @@
  * ─────────────────────────────────────────────────────────────────────────
  */
 
-// `type`: a UNION of string literals. A mood can only be one of these 5 words,
-// so a typo like 'hapy' is a compile error instead of a hidden bug.
-export type Mood = 'happy' | 'calm' | 'sad' | 'anxious' | 'excited'
+// `enum`: a named set of constants. A mood can only be one of these 5 members,
+// so a typo like Mood.HAPY is a compile error instead of a hidden bug.
+// String values keep localStorage readable ("happy", not 0).
+export enum Mood {
+  HAPPY = 'happy',
+  SAD = 'sad',
+  MOTIVATED = 'motivated',
+  STRESSED = 'stressed',
+  CALM = 'calm',
+}
 
 // `type`: an ALIAS. It is still a string, but the name says what it is for.
 export type EntryId = string

@@ -22,8 +22,8 @@
   --mood-happy: #c49a2c;
   --mood-calm: #5f87a0;
   --mood-sad: #7a7596;
-  --mood-anxious: #b5684a;
-  --mood-excited: #b8577a;
+  --mood-stressed: #b5684a;
+  --mood-motivated: #6f8a3a;
 
   --font-serif: 'Fraunces', Georgia, 'Times New Roman', serif;
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -51,8 +51,8 @@
   --mood-happy: #d8b45a;
   --mood-calm: #86aac0;
   --mood-sad: #a59fc2;
-  --mood-anxious: #d08b6e;
-  --mood-excited: #d483a0;
+  --mood-stressed: #d08b6e;
+  --mood-motivated: #a3bd6e;
 
   color-scheme: dark;
 }
@@ -418,11 +418,11 @@ textarea {
 .entry-card[data-mood='sad'] {
   --mood-color: var(--mood-sad);
 }
-.entry-card[data-mood='anxious'] {
-  --mood-color: var(--mood-anxious);
+.entry-card[data-mood='stressed'] {
+  --mood-color: var(--mood-stressed);
 }
-.entry-card[data-mood='excited'] {
-  --mood-color: var(--mood-excited);
+.entry-card[data-mood='motivated'] {
+  --mood-color: var(--mood-motivated);
 }
 
 .entry-card__header {
