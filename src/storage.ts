@@ -1,5 +1,5 @@
 import { Mood } from './types.js'
-import type { CardAction, JournalEntry, Theme } from './types.js'
+import type { CardAction, Journal, JournalEntry, Theme } from './types.js'
 
 // ── Type guards ─────────────────────────────────────────────────────────
 // Type guards turn `unknown` data (from JSON or the DOM) into trusted types.
@@ -26,7 +26,7 @@ export function isTheme(value: unknown): value is Theme {
 }
 
 export function isCardAction(value: unknown): value is CardAction {
-  return value === 'edit' || value === 'delete' || value === 'favorite'
+  return value === 'edit' || value === 'delete'
 }
 
 export function isJournalEntry(value: unknown): value is JournalEntry {
@@ -35,11 +35,8 @@ export function isJournalEntry(value: unknown): value is JournalEntry {
     isString(value.id) &&
     isString(value.title) &&
     isString(value.content) &&
-    isString(value.date) &&
     isMood(value.mood) &&
-    typeof value.favorite === 'boolean' &&
-    isNumber(value.createdAt) &&
-    (value.updatedAt === undefined || isNumber(value.updatedAt))
+    isNumber(value.timestamp)
   )
 }
 
@@ -61,7 +58,7 @@ export type Validator<T> = (value: unknown) => value is T
  * GENERIC wrapper around localStorage.
  *
  * <T> is a placeholder for "the type of data stored under this key". The same
- * class works for entries (TypedStorage<JournalEntry[]>) and for the theme
+ * class works for entries (TypedStorage<Journal>) and for the theme
  * (TypedStorage<Theme>), and each copy is fully type-checked.
  *
  * It is not called `Storage` because the browser already has a built-in type
@@ -109,18 +106,18 @@ export class TypedStorage<T> {
 }
 
 // ── Journal and theme storage ───────────────────────────────────────────
-const entryStorage = new TypedStorage<JournalEntry[]>('journal:entries', isArrayOf(isJournalEntry), [])
+const entryStorage = new TypedStorage<Journal>('journal:entries', isArrayOf(isJournalEntry), [])
 
 const prefersDark: boolean = window.matchMedia('(prefers-color-scheme: dark)').matches
 const themeStorage = new TypedStorage<Theme>('journal:theme', isTheme, prefersDark ? 'dark' : 'light')
 
 /** Loads the saved entries, or an empty list if there are none or they are broken. */
-export function loadEntries(): JournalEntry[] {
+export function loadEntries(): Journal {
   return entryStorage.load()
 }
 
-export function saveEntries(entries: JournalEntry[]): boolean {
-  return entryStorage.save(entries)
+export function saveEntries(journal: Journal): boolean {
+  return entryStorage.save(journal)
 }
 
 /** Loads the saved theme, or the system preference if none was saved. */

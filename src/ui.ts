@@ -1,5 +1,5 @@
 import { Mood } from './types.js'
-import type { EntryDraft, JournalEntry, MoodOption, Theme } from './types.js'
+import type { EntryDraft, Journal, JournalEntry, MoodOption, Theme } from './types.js'
 import { isMood } from './storage.js'
 
 // ── DOM helpers ─────────────────────────────────────────────────────────
@@ -31,34 +31,21 @@ export function escapeHtml(text: string): string {
 }
 
 // ── Dates ───────────────────────────────────────────────────────────────
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
-
-/** Today's date in the user's local time zone, as "YYYY-MM-DD". */
-export function todayISO(now: Date = new Date()): string {
-  const year: number = now.getFullYear()
-  const month: string = String(now.getMonth() + 1).padStart(2, '0')
-  const day: string = String(now.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-export function isISODate(value: string): boolean {
-  return ISO_DATE.test(value) && !Number.isNaN(parseISODate(value).getTime())
-}
-
-/** "2026-10-22" → a Date at local midnight (avoids UTC off-by-one-day bugs). */
-export function parseISODate(iso: string): Date {
-  const [year, month, day]: number[] = iso.split('-').map(Number)
-  return new Date(year, month - 1, day)
-}
-
-/** "2026-10-22" → "Thu, 22 Oct 2026" (in the user's own locale format). */
-export function formatDate(iso: string): string {
-  return parseISODate(iso).toLocaleDateString(undefined, {
+/** A timestamp → "Mon, 26 Oct 2026, 14:05" (in the user's own locale format). */
+export function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleString(undefined, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
     year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   })
+}
+
+/** A timestamp → "2026-10-26T14:05:00.000Z", the machine-readable form for <time datetime>. */
+function toISO(timestamp: number): string {
+  return new Date(timestamp).toISOString()
 }
 
 // ── Moods ───────────────────────────────────────────────────────────────
@@ -107,22 +94,17 @@ export function applyTheme(theme: Theme, button: HTMLButtonElement): void {
 /** Builds the HTML for ONE entry card. */
 export function renderEntryCard(entry: JournalEntry, index: number): string {
   const title: string = escapeHtml(entry.title)
-  const edited: string = entry.updatedAt !== undefined ? '<span class="entry-card__edited">Edited</span>' : ''
-  const favoriteLabel: string = entry.favorite ? `Remove ${title} from favourites` : `Add ${title} to favourites`
 
   return `
     <article class="entry-card" data-id="${escapeHtml(entry.id)}" data-mood="${entry.mood}" style="--i: ${index}">
       <header class="entry-card__header">
-        <time class="entry-card__date" datetime="${entry.date}">${formatDate(entry.date)}</time>
+        <time class="entry-card__date" datetime="${toISO(entry.timestamp)}">${formatDate(entry.timestamp)}</time>
         <span class="entry-card__mood">${getMoodLabel(entry.mood)}</span>
       </header>
       <h3 class="entry-card__title">${title}</h3>
       <p class="entry-card__content">${escapeHtml(entry.content)}</p>
       <footer class="entry-card__footer">
-        ${edited}
         <div class="entry-card__actions">
-          <button class="text-btn text-btn--favorite" type="button" data-action="favorite"
-            aria-pressed="${entry.favorite}" aria-label="${favoriteLabel}">${entry.favorite ? '★' : '☆'}</button>
           <button class="text-btn" type="button" data-action="edit" aria-label="Edit ${title}">Edit</button>
           <button class="text-btn text-btn--danger" type="button" data-action="delete" aria-label="Delete ${title}">Delete</button>
         </div>
@@ -135,7 +117,7 @@ export function renderEntryCard(entry: JournalEntry, index: number): string {
  * `totalCount` is how many entries exist in total, so we can tell the
  * difference between "journal is empty" and "nothing is visible right now".
  */
-export function renderEntryList(container: HTMLElement, entries: readonly JournalEntry[], totalCount: number): void {
+export function renderEntryList(container: HTMLElement, entries: Journal, totalCount: number): void {
   if (totalCount === 0) {
     container.innerHTML = `
       <div class="empty-state">
@@ -161,7 +143,6 @@ export class EntryForm {
   private readonly form: HTMLFormElement
   private readonly heading: HTMLElement
   private readonly titleInput: HTMLInputElement
-  private readonly dateInput: HTMLInputElement
   private readonly moodSelect: HTMLSelectElement
   private readonly contentInput: HTMLTextAreaElement
   private readonly submitButton: HTMLButtonElement
@@ -172,7 +153,6 @@ export class EntryForm {
     this.form = form
     this.heading = heading
     this.titleInput = getElement('#entry-title', HTMLInputElement, form)
-    this.dateInput = getElement('#entry-date', HTMLInputElement, form)
     this.moodSelect = getElement('#entry-mood', HTMLSelectElement, form)
     this.contentInput = getElement('#entry-content', HTMLTextAreaElement, form)
     this.submitButton = getElement('#entry-submit', HTMLButtonElement, form)
@@ -199,7 +179,6 @@ export class EntryForm {
   startEditing(entry: JournalEntry): void {
     this.clearErrors()
     this.titleInput.value = entry.title
-    this.dateInput.value = entry.date
     this.moodSelect.value = entry.mood
     this.contentInput.value = entry.content
     this.heading.textContent = 'Edit entry'
@@ -213,8 +192,6 @@ export class EntryForm {
   reset(): void {
     this.form.reset()
     this.clearErrors()
-    this.dateInput.value = todayISO()
-    this.dateInput.max = todayISO()
     this.heading.textContent = 'New entry'
     this.submitButton.textContent = 'Save entry'
     this.cancelButton.hidden = true
@@ -226,13 +203,10 @@ export class EntryForm {
     this.clearErrors()
     const title: string = this.titleInput.value.trim()
     const content: string = this.contentInput.value.trim()
-    const date: string = this.dateInput.value
     const mood: string = this.moodSelect.value
 
     const problems: string[] = []
     if (title === '') problems.push(this.flag(this.titleInput, 'Give your entry a title.'))
-    if (!isISODate(date)) problems.push(this.flag(this.dateInput, 'Pick a valid date.'))
-    else if (date > todayISO()) problems.push(this.flag(this.dateInput, 'The date cannot be in the future.'))
     if (content === '') problems.push(this.flag(this.contentInput, 'Write something before saving.'))
 
     if (problems.length > 0 || !isMood(mood)) {
@@ -241,7 +215,7 @@ export class EntryForm {
       this.form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
       return null
     }
-    return { title, content, date, mood }
+    return { title, content, mood }
   }
 
   private flag(input: HTMLElement, message: string): string {

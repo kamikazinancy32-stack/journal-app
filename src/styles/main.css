@@ -204,12 +204,6 @@ textarea {
   min-width: 0;
 }
 
-.field-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1.5rem;
-}
-
 .field label,
 .field-label {
   font-size: 0.8rem;
@@ -355,15 +349,6 @@ textarea {
   color: var(--danger);
 }
 
-.text-btn--favorite {
-  font-size: 1rem;
-  line-height: 1;
-}
-
-.text-btn--favorite[aria-pressed='true'] {
-  color: var(--accent);
-}
-
 /* ---------- Entries ---------- */
 .entries-head {
   display: flex;
@@ -475,12 +460,6 @@ textarea {
   flex-wrap: wrap;
   gap: 0.5rem 1rem;
   margin-top: 1rem;
-}
-
-.entry-card__edited {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: var(--muted);
 }
 
 .entry-card__actions {

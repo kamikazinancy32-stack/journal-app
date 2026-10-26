@@ -23,30 +23,28 @@ export enum Mood {
   CALM = 'calm',
 }
 
-// `type`: an ALIAS. It is still a string, but the name says what it is for.
-export type EntryId = string
-
 // `type`: union of the two colour themes the app supports.
 export type Theme = 'light' | 'dark'
 
 // `type`: union of the actions a button on an entry card can trigger.
-export type CardAction = 'edit' | 'delete' | 'favorite'
+export type CardAction = 'edit' | 'delete'
 
 // `interface`: the shape of ONE journal entry as it is saved in localStorage.
 export interface JournalEntry {
-  id: EntryId
+  id: string
   title: string
   content: string
-  date: string // the day the entry is about, as "YYYY-MM-DD"
   mood: Mood
-  favorite: boolean
-  createdAt: number // timestamp in milliseconds
-  updatedAt?: number // OPTIONAL (?): only exists after the entry is edited
+  timestamp: number // when the entry was created, in milliseconds (Date.now())
 }
 
+// `type`: an ALIAS. A Journal is just an array of entries, but the name says
+// what it is, so function signatures read like the app: (journal: Journal).
+export type Journal = JournalEntry[]
+
 // `type`: built FROM JournalEntry with utility types.
-// A draft is what the form produces: no id or timestamps yet.
-export type EntryDraft = Omit<JournalEntry, 'id' | 'favorite' | 'createdAt' | 'updatedAt'>
+// A draft is what the form produces: no id or timestamp yet.
+export type EntryDraft = Omit<JournalEntry, 'id' | 'timestamp'>
 // Partial makes every property optional, so an update can change just one field.
 export type EntryUpdate = Partial<EntryDraft>
 
@@ -58,5 +56,5 @@ export interface MoodOption {
 
 // `interface`: what the screen is currently showing.
 export interface ViewState {
-  editingId: EntryId | null // null means "creating a new entry"
+  editingId: string | null // null means "creating a new entry"
 }

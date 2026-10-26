@@ -1,4 +1,4 @@
-import type { CardAction, EntryDraft, EntryId, EntryUpdate, JournalEntry, Theme, ViewState } from './types.js'
+import type { CardAction, EntryDraft, EntryUpdate, Journal, JournalEntry, Theme, ViewState } from './types.js'
 import { isCardAction, loadEntries, loadTheme, saveEntries, saveTheme } from './storage.js'
 import { EntryForm, announce, applyTheme, getElement, renderEntryList } from './ui.js'
 
@@ -13,7 +13,7 @@ function createId(): string {
 }
 
 // A listener is any function that wants to hear "the entries changed".
-export type StoreListener = (entries: readonly JournalEntry[]) => void
+export type StoreListener = (journal: Journal) => void
 
 /**
  * CLASS that owns all journal entries.
@@ -21,7 +21,7 @@ export type StoreListener = (entries: readonly JournalEntry[]) => void
  * to localStorage and tells every listener to re-render.
  */
 export class JournalStore {
-  private entries: JournalEntry[]
+  private entries: Journal
   private readonly listeners: StoreListener[] = []
 
   constructor() {
@@ -33,12 +33,12 @@ export class JournalStore {
     return this.entries.length
   }
 
-  /** Returns a read-only copy so callers cannot change the store by accident. */
-  getAll(): readonly JournalEntry[] {
+  /** Returns a copy so callers cannot change the store by accident. */
+  getAll(): Journal {
     return [...this.entries]
   }
 
-  getById(id: EntryId): JournalEntry | undefined {
+  getById(id: string): JournalEntry | undefined {
     return this.entries.find((entry: JournalEntry): boolean => entry.id === id)
   }
 
@@ -46,43 +46,26 @@ export class JournalStore {
     const entry: JournalEntry = {
       ...this.clean(draft),
       id: createId(),
-      favorite: false,
-      createdAt: Date.now(),
+      timestamp: Date.now(),
     }
     this.entries = [entry, ...this.entries]
     this.commit()
     return entry
   }
 
-  update(id: EntryId, changes: EntryUpdate): JournalEntry | undefined {
+  update(id: string, changes: EntryUpdate): JournalEntry | undefined {
     const existing: JournalEntry | undefined = this.getById(id)
     if (!existing) return undefined
 
-    const updated: JournalEntry = {
-      ...existing,
-      ...this.clean({ ...existing, ...changes }),
-      updatedAt: Date.now(),
-    }
+    // id and timestamp are kept from the original entry.
+    const updated: JournalEntry = { ...existing, ...this.clean({ ...existing, ...changes }) }
     this.entries = this.entries.map((entry: JournalEntry): JournalEntry => (entry.id === id ? updated : entry))
     this.commit()
     return updated
   }
 
-  /** Flips the favourite flag. Returns the new value (false if not found). */
-  toggleFavorite(id: EntryId): boolean {
-    const existing: JournalEntry | undefined = this.getById(id)
-    if (!existing) return false
-
-    const favorite: boolean = !existing.favorite
-    this.entries = this.entries.map(
-      (entry: JournalEntry): JournalEntry => (entry.id === id ? { ...entry, favorite } : entry),
-    )
-    this.commit()
-    return favorite
-  }
-
   /** Returns true if something was deleted. */
-  remove(id: EntryId): boolean {
+  remove(id: string): boolean {
     const before: number = this.entries.length
     this.entries = this.entries.filter((entry: JournalEntry): boolean => entry.id !== id)
     if (this.entries.length === before) return false
@@ -105,7 +88,7 @@ export class JournalStore {
 
   private commit(): void {
     saveEntries(this.entries)
-    const snapshot: readonly JournalEntry[] = this.getAll()
+    const snapshot: Journal = this.getAll()
     this.listeners.forEach((listener: StoreListener): void => listener(snapshot))
   }
 }
@@ -120,15 +103,13 @@ const themeButton: HTMLButtonElement = getElement('#theme-toggle', HTMLButtonEle
 const form = new EntryForm(getElement('#entry-form', HTMLFormElement), getElement('#form-heading', HTMLElement))
 
 // ── Rendering ───────────────────────────────────────────────────────────
-/** Newest first: by entry date, then by when it was written. */
-function getVisibleEntries(): JournalEntry[] {
-  return [...store.getAll()].sort(
-    (a: JournalEntry, b: JournalEntry): number => b.date.localeCompare(a.date) || b.createdAt - a.createdAt,
-  )
+/** Newest first. */
+function getVisibleEntries(): Journal {
+  return store.getAll().sort((a: JournalEntry, b: JournalEntry): number => b.timestamp - a.timestamp)
 }
 
 function render(): void {
-  const visible: JournalEntry[] = getVisibleEntries()
+  const visible: Journal = getVisibleEntries()
   renderEntryList(listEl, visible, store.count)
   countEl.textContent = store.count === 1 ? '1 entry' : `${store.count} entries`
 }
@@ -169,12 +150,6 @@ function handleCardAction(action: CardAction, entry: JournalEntry): void {
         announce(`Deleted “${entry.title}”.`)
       }
       break
-    case 'favorite': {
-      const isFavorite: boolean = store.toggleFavorite(entry.id)
-      announce(isFavorite ? 'Added to favourites.' : 'Removed from favourites.')
-      listEl.querySelector<HTMLButtonElement>(`[data-id="${entry.id}"] [data-action="favorite"]`)?.focus()
-      break
-    }
   }
 }
 
