@@ -68,6 +68,14 @@ export function getMoodLabel(mood: Mood): string {
   return MOOD_LABELS[mood]
 }
 
+/** Fills the mood filter: "All moods" first, then one option per Mood. */
+export function renderMoodFilter(select: HTMLSelectElement): void {
+  const options: string[] = MOOD_OPTIONS.map(
+    (option: MoodOption): string => `<option value="${option.value}">${option.label}</option>`,
+  )
+  select.innerHTML = ['<option value="all">All moods</option>', ...options].join('')
+}
+
 // ── Screen-reader announcements ─────────────────────────────────────────
 /** Reads a short message aloud for screen-reader users (via an aria-live region). */
 export function announce(message: string): void {
@@ -128,7 +136,7 @@ export function renderEntryList(container: HTMLElement, entries: Journal, totalC
   }
 
   if (entries.length === 0) {
-    container.innerHTML = `<p class="no-results">No entries to show.</p>`
+    container.innerHTML = `<p class="no-results">No entries match your filters.</p>`
     return
   }
 

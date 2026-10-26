@@ -364,15 +364,22 @@ textarea {
   color: var(--muted);
 }
 
+/* Search grows to fill the row; the mood filter keeps a sensible width.
+   On narrow screens both wrap onto their own full-width line. */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   gap: 1rem 1.5rem;
   margin-top: 1.5rem;
 }
 
-.toolbar:empty {
-  display: none;
+.toolbar .field {
+  flex: 1 1 10rem;
+}
+
+.toolbar .field--grow {
+  flex: 3 1 14rem;
 }
 
 .entry-list {

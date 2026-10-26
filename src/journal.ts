@@ -1,6 +1,6 @@
 import type { CardAction, EntryDraft, EntryFilter, Journal, JournalEntry, Result, Theme, ValidationError, ViewState } from './types.js'
 import { isCardAction, isMood, loadEntries, loadTheme, saveEntries, saveTheme } from './storage.js'
-import { EntryForm, announce, applyTheme, getElement, renderEntryList } from './ui.js'
+import { EntryForm, announce, applyTheme, getElement, renderEntryList, renderMoodFilter } from './ui.js'
 
 // ── Journal logic ───────────────────────────────────────────────────────
 /**
@@ -130,6 +130,8 @@ const state: ViewState = { editingId: null, filter: { mood: 'all', search: '' } 
 const listEl: HTMLElement = getElement('#entry-list', HTMLElement)
 const countEl: HTMLElement = getElement('#entry-count', HTMLElement)
 const themeButton: HTMLButtonElement = getElement('#theme-toggle', HTMLButtonElement)
+const searchInput: HTMLInputElement = getElement('#filter-search', HTMLInputElement)
+const moodFilter: HTMLSelectElement = getElement('#filter-mood', HTMLSelectElement)
 const form = new EntryForm(getElement('#entry-form', HTMLFormElement), getElement('#form-heading', HTMLElement))
 
 // ── Rendering ───────────────────────────────────────────────────────────
@@ -143,7 +145,8 @@ function getVisibleEntries(): Journal {
 function render(): void {
   const visible: Journal = getVisibleEntries()
   renderEntryList(listEl, visible, store.count)
-  countEl.textContent = store.count === 1 ? '1 entry' : `${store.count} entries`
+  const total: string = store.count === 1 ? '1 entry' : `${store.count} entries`
+  countEl.textContent = visible.length === store.count ? total : `${visible.length} of ${total}`
 }
 
 function stopEditing(): void {
@@ -196,6 +199,19 @@ listEl.addEventListener('click', (event: MouseEvent): void => {
   const action: string | undefined = button?.dataset.action
   const entry: JournalEntry | undefined = id !== undefined ? findByProperty(store.getAll(), 'id', id) : undefined
   if (entry && isCardAction(action)) handleCardAction(action, entry)
+})
+
+// Filters: re-render on every keystroke / change. The select's value is a plain
+// string, so the isMood type guard turns it back into a Mood (or 'all').
+renderMoodFilter(moodFilter)
+searchInput.addEventListener('input', (): void => {
+  state.filter.search = searchInput.value
+  render()
+})
+moodFilter.addEventListener('change', (): void => {
+  const value: string = moodFilter.value
+  state.filter.mood = isMood(value) ? value : 'all'
+  render()
 })
 
 let theme: Theme = loadTheme()
