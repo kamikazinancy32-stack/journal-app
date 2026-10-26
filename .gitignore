@@ -2,7 +2,7 @@
 node_modules/
 
 # Build output
-dist/
+# dist/ is committed on purpose: index.html loads ./dist/journal.js directly
 dist-ssr/
 
 # Environment variables (may contain secrets)
