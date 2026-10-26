@@ -42,11 +42,21 @@ export interface JournalEntry {
 // what it is, so function signatures read like the app: (journal: Journal).
 export type Journal = JournalEntry[]
 
-// `type`: built FROM JournalEntry with utility types.
-// A draft is what the form produces: no id or timestamp yet.
+// `type`: built FROM JournalEntry with the Omit utility type.
+// A draft is the user's part of an entry: everything except id and timestamp.
 export type EntryDraft = Omit<JournalEntry, 'id' | 'timestamp'>
-// Partial makes every property optional, so an update can change just one field.
-export type EntryUpdate = Partial<EntryDraft>
+
+// `interface`: one problem found while validating user input.
+// `keyof EntryDraft` means field can only be 'title' | 'content' | 'mood'.
+export interface ValidationError {
+  field?: keyof EntryDraft // OPTIONAL (?): missing when the error is not about one field
+  message: string
+}
+
+// `type`: a GENERIC union ("discriminated union"). Checking `result.ok` tells
+// TypeScript which branch we are in: `value` only exists when ok is true,
+// `errors` only when ok is false.
+export type Result<T> = { ok: true; value: T } | { ok: false; errors: ValidationError[] }
 
 // `interface`: the shape of one option in the mood picker.
 export interface MoodOption {

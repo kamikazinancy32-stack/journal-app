@@ -1,5 +1,5 @@
-import type { CardAction, EntryDraft, EntryUpdate, Journal, JournalEntry, Theme, ViewState } from './types.js'
-import { isCardAction, loadEntries, loadTheme, saveEntries, saveTheme } from './storage.js'
+import type { CardAction, EntryDraft, Journal, JournalEntry, Result, Theme, ValidationError, ViewState } from './types.js'
+import { isCardAction, isMood, loadEntries, loadTheme, saveEntries, saveTheme } from './storage.js'
 import { EntryForm, announce, applyTheme, getElement, renderEntryList } from './ui.js'
 
 // ── Journal logic ───────────────────────────────────────────────────────
@@ -13,13 +13,24 @@ export function findByProperty<T>(list: T[], key: keyof T, value: T[keyof T]): T
   return list.find((item: T): boolean => item[key] === value)
 }
 
-/** Creates a unique id for a new entry. */
-function createId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  // Fallback for older browsers / non-secure contexts.
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+/**
+ * Checks user input. `Partial<JournalEntry>` makes every field optional, so we
+ * cannot assume title, content or mood exist: each one is checked here.
+ * Returns the cleaned draft, or the list of problems.
+ */
+export function validateEntry(input: Partial<JournalEntry>): Result<EntryDraft> {
+  const title: string = input.title?.trim() ?? ''
+  const content: string = input.content?.trim() ?? ''
+  const mood: unknown = input.mood // re-checked at runtime: it came from the page
+
+  const errors: ValidationError[] = []
+  if (title === '') errors.push({ field: 'title', message: 'Give your entry a title.' })
+  if (content === '') errors.push({ field: 'content', message: 'Write something before saving.' })
+  if (!isMood(mood)) errors.push({ field: 'mood', message: 'Pick a mood from the list.' })
+
+  // After this line TypeScript knows `mood` is a Mood (the type guard narrowed it).
+  if (errors.length > 0 || !isMood(mood)) return { ok: false, errors }
+  return { ok: true, value: { title, content, mood } }
 }
 
 // A listener is any function that wants to hear "the entries changed".
@@ -48,30 +59,33 @@ export class JournalStore {
     return [...this.entries]
   }
 
-  add(draft: EntryDraft): JournalEntry {
-    const entry: JournalEntry = {
-      ...this.clean(draft),
-      id: createId(),
-      timestamp: Date.now(),
-    }
+  /** Validates the input, then builds a complete entry (id + timestamp) and saves it. */
+  addEntry(input: Partial<JournalEntry>): Result<JournalEntry> {
+    const draft: Result<EntryDraft> = validateEntry(input)
+    if (!draft.ok) return draft
+
+    const entry: JournalEntry = { ...draft.value, id: crypto.randomUUID(), timestamp: Date.now() }
     this.entries = [entry, ...this.entries]
     this.commit()
-    return entry
+    return { ok: true, value: entry }
   }
 
-  update(id: string, changes: EntryUpdate): JournalEntry | undefined {
+  /** Applies changes to an existing entry. id and timestamp never change. */
+  editEntry(id: string, changes: Partial<JournalEntry>): Result<JournalEntry> {
     const existing: JournalEntry | undefined = findByProperty(this.entries, 'id', id)
-    if (!existing) return undefined
+    if (!existing) return { ok: false, errors: [{ message: 'That entry no longer exists.' }] }
 
-    // id and timestamp are kept from the original entry.
-    const updated: JournalEntry = { ...existing, ...this.clean({ ...existing, ...changes }) }
+    const draft: Result<EntryDraft> = validateEntry({ ...existing, ...changes })
+    if (!draft.ok) return draft
+
+    const updated: JournalEntry = { ...existing, ...draft.value }
     this.entries = this.entries.map((entry: JournalEntry): JournalEntry => (entry.id === id ? updated : entry))
     this.commit()
-    return updated
+    return { ok: true, value: updated }
   }
 
   /** Returns true if something was deleted. */
-  remove(id: string): boolean {
+  deleteEntry(id: string): boolean {
     const before: number = this.entries.length
     this.entries = this.entries.filter((entry: JournalEntry): boolean => entry.id !== id)
     if (this.entries.length === before) return false
@@ -86,10 +100,6 @@ export class JournalStore {
       const index: number = this.listeners.indexOf(listener)
       if (index >= 0) this.listeners.splice(index, 1)
     }
-  }
-
-  private clean(draft: EntryDraft): EntryDraft {
-    return { ...draft, title: draft.title.trim(), content: draft.content.trim() }
   }
 
   private commit(): void {
@@ -126,14 +136,16 @@ function stopEditing(): void {
 }
 
 // ── Events ──────────────────────────────────────────────────────────────
-form.onSubmit((draft: EntryDraft): void => {
-  if (state.editingId !== null) {
-    store.update(state.editingId, draft)
-    announce(`Updated “${draft.title}”.`)
-  } else {
-    store.add(draft)
-    announce(`Saved “${draft.title}”.`)
+form.onSubmit((input: Partial<JournalEntry>): void => {
+  const isEditing: boolean = state.editingId !== null
+  const result: Result<JournalEntry> =
+    state.editingId !== null ? store.editEntry(state.editingId, input) : store.addEntry(input)
+
+  if (!result.ok) {
+    form.showErrors(result.errors)
+    return
   }
+  announce(`${isEditing ? 'Updated' : 'Saved'} “${result.value.title}”.`)
   stopEditing()
 })
 
@@ -151,7 +163,7 @@ function handleCardAction(action: CardAction, entry: JournalEntry): void {
       break
     case 'delete':
       if (window.confirm(`Delete “${entry.title}”? This cannot be undone.`)) {
-        store.remove(entry.id)
+        store.deleteEntry(entry.id)
         if (state.editingId === entry.id) stopEditing()
         announce(`Deleted “${entry.title}”.`)
       }

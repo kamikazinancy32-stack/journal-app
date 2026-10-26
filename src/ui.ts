@@ -1,5 +1,5 @@
 import { Mood } from './types.js'
-import type { EntryDraft, Journal, JournalEntry, MoodOption, Theme } from './types.js'
+import type { EntryDraft, Journal, JournalEntry, MoodOption, Theme, ValidationError } from './types.js'
 import { isMood } from './storage.js'
 
 // ── DOM helpers ─────────────────────────────────────────────────────────
@@ -136,9 +136,9 @@ export function renderEntryList(container: HTMLElement, entries: Journal, totalC
 }
 
 // ── Entry form ──────────────────────────────────────────────────────────
-export type SubmitHandler = (draft: EntryDraft) => void
+export type SubmitHandler = (input: Partial<JournalEntry>) => void
 
-/** CLASS that wraps the entry form: reading, validating, filling and resetting it. */
+/** CLASS that wraps the entry form: reading, filling, resetting it and showing errors. */
 export class EntryForm {
   private readonly form: HTMLFormElement
   private readonly heading: HTMLElement
@@ -148,6 +148,8 @@ export class EntryForm {
   private readonly submitButton: HTMLButtonElement
   private readonly cancelButton: HTMLButtonElement
   private readonly errorText: HTMLElement
+  // `Record<keyof EntryDraft, HTMLElement>`: exactly one input per editable field.
+  private readonly fields: Record<keyof EntryDraft, HTMLElement>
 
   constructor(form: HTMLFormElement, heading: HTMLElement) {
     this.form = form
@@ -158,6 +160,7 @@ export class EntryForm {
     this.submitButton = getElement('#entry-submit', HTMLButtonElement, form)
     this.cancelButton = getElement('#entry-cancel', HTMLButtonElement, form)
     this.errorText = getElement('#form-error', HTMLElement, form)
+    this.fields = { title: this.titleInput, content: this.contentInput, mood: this.moodSelect }
 
     this.renderMoodOptions()
     this.reset()
@@ -166,8 +169,8 @@ export class EntryForm {
   onSubmit(handler: SubmitHandler): void {
     this.form.addEventListener('submit', (event: SubmitEvent): void => {
       event.preventDefault()
-      const draft: EntryDraft | null = this.read()
-      if (draft) handler(draft)
+      this.clearErrors()
+      handler(this.read())
     })
   }
 
@@ -198,30 +201,30 @@ export class EntryForm {
     this.form.classList.remove('is-editing')
   }
 
-  /** Validates the inputs. Returns a draft, or null (and shows errors) if invalid. */
-  private read(): EntryDraft | null {
+  /** Marks the invalid fields, shows the messages and moves focus to the first problem. */
+  showErrors(errors: ValidationError[]): void {
     this.clearErrors()
-    const title: string = this.titleInput.value.trim()
-    const content: string = this.contentInput.value.trim()
-    const mood: string = this.moodSelect.value
-
-    const problems: string[] = []
-    if (title === '') problems.push(this.flag(this.titleInput, 'Give your entry a title.'))
-    if (content === '') problems.push(this.flag(this.contentInput, 'Write something before saving.'))
-
-    if (problems.length > 0 || !isMood(mood)) {
-      this.errorText.textContent = problems.join(' ')
-      this.errorText.hidden = false
-      this.form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
-      return null
-    }
-    return { title, content, mood }
+    errors.forEach((error: ValidationError): void => {
+      if (error.field === undefined) return
+      this.fields[error.field].setAttribute('aria-invalid', 'true')
+      this.fields[error.field].setAttribute('aria-describedby', 'form-error')
+    })
+    this.errorText.textContent = errors.map((error: ValidationError): string => error.message).join(' ')
+    this.errorText.hidden = false
+    this.form.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
   }
 
-  private flag(input: HTMLElement, message: string): string {
-    input.setAttribute('aria-invalid', 'true')
-    input.setAttribute('aria-describedby', 'form-error')
-    return message
+  /**
+   * Reads the raw input. The result is Partial because nothing is checked here:
+   * journal.ts validates it. The mood is only included if it is a real Mood.
+   */
+  private read(): Partial<JournalEntry> {
+    const mood: string = this.moodSelect.value
+    return {
+      title: this.titleInput.value,
+      content: this.contentInput.value,
+      mood: isMood(mood) ? mood : undefined,
+    }
   }
 
   private clearErrors(): void {
